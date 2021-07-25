@@ -121,6 +121,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+config.py
 
 # Spyder project settings
 .spyderproject
@@ -212,6 +213,7 @@ cython_debug/
 # Cython debug symbols
 
 ### VisualStudioCode ###
+.vscode
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
