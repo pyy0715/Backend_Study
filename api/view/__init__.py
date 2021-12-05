@@ -1,21 +1,29 @@
-# Presentation Layer
-
 import jwt
 
 from flask import request, jsonify, current_app, Response, g
 from flask.json import JSONEncoder
-import functools
+from functools import wraps
+
+# Default JSON encoder는 set를 JSON으로 변환할 수 없다.
+# 그럼으로 커스텀 엔코더를 작성해서 set을 list로 변환하여
+# JSON으로 변환 가능하게 해주어야 한다.
 
 
 class CustomJSONEncoder(JSONEncoder):
     def default(self, obj):
         if isinstance(obj, set):
             return list(obj)
+
         return JSONEncoder.default(self, obj)
 
 
+#########################################################
+#       Decorators
+#########################################################
+
+
 def login_required(f):
-    @functools.wraps(f)
+    @wraps(f)
     def decorated_function(*args, **kwargs):
         access_token = request.headers.get("Authorization")
         if access_token is not None:
@@ -33,6 +41,7 @@ def login_required(f):
             g.user_id = user_id
         else:
             return Response(status=401)
+
         return f(*args, **kwargs)
 
     return decorated_function
@@ -44,11 +53,15 @@ def create_endpoints(app, services):
     user_service = services.user_service
     tweet_service = services.tweet_service
 
+    @app.route("/ping", methods=["GET"])
+    def ping():
+        return "pong"
+
     @app.route("/sign-up", methods=["POST"])
     def sign_up():
-        new_user = request.json()
-        new_user_id = user_service.create_new_user(new_user)
-        new_user = user_service.get_user(new_user_id)
+        new_user = request.json
+        new_user = user_service.create_new_user(new_user)
+
         return jsonify(new_user)
 
     @app.route("/login", methods=["POST"])
@@ -60,7 +73,10 @@ def create_endpoints(app, services):
             user_credential = user_service.get_user_id_and_password(credential["email"])
             user_id = user_credential["id"]
             token = user_service.generate_access_token(user_id)
+
             return jsonify({"user_id": user_id, "access_token": token})
+        else:
+            return "", 401
 
     @app.route("/tweet", methods=["POST"])
     @login_required
@@ -71,7 +87,8 @@ def create_endpoints(app, services):
 
         result = tweet_service.tweet(user_id, tweet)
         if result is None:
-            return "300자를 초과하였습니다.", 400
+            return "300자를 초과했습니다", 400
+
         return "", 200
 
     @app.route("/follow", methods=["POST"])
@@ -79,7 +96,7 @@ def create_endpoints(app, services):
     def follow():
         payload = request.json
         user_id = g.user_id
-        follow_id = payload["follow_id"]
+        follow_id = payload["follow"]
 
         user_service.follow(user_id, follow_id)
 
@@ -90,22 +107,22 @@ def create_endpoints(app, services):
     def unfollow():
         payload = request.json
         user_id = g.user_id
-        unfollow_id = payload["unfollow_id"]
+        unfollow_id = payload["unfollow"]
 
-        user_service.follow(user_id, unfollow_id)
+        user_service.unfollow(user_id, unfollow_id)
 
         return "", 200
 
     @app.route("/timeline/<int:user_id>", methods=["GET"])
     def timeline(user_id):
         timeline = tweet_service.get_timeline(user_id)
-        return jsonify({"user_id": user_id, "timeline": timeline(user_id)})
+
+        return jsonify({"user_id": user_id, "timeline": timeline})
 
     @app.route("/timeline", methods=["GET"])
     @login_required
     def user_timeline():
         user_id = g.user_id
-        timeline = tweet_service.get_timeline(user_id)
-        return jsonify({"user_id": user_id, "timeline": timeline(user_id)})
+        timeline = tweet_service.get_timeline(g.user_id)
 
-    return app
+        return jsonify({"user_id": user_id, "timeline": timeline})
