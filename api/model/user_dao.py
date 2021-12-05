@@ -38,7 +38,7 @@ class UserDao:
         return self.db.execute(
             text(
                 """
-                INSERT INTO users_follow_list (user_id, follow_id)
+                INSERT INTO users_follow_list (user_id, follow_user_id)
                 VALUES (:id, :follow)
                 """
             ),

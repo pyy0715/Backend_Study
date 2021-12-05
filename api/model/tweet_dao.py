@@ -9,9 +9,14 @@ class TweetDao:
         return self.db.execute(
             text(
                 """
-                INSERT INTO users (user_id, tweet)
-                VALUES (:user_id, :tweet)
-                """
+            INSERT INTO tweets (
+                user_id,
+                tweet
+            ) VALUES (
+                :id,
+                :tweet
+            )
+        """
             ),
             {"id": user_id, "tweet": tweet},
         ).rowcount
@@ -20,14 +25,16 @@ class TweetDao:
         timeline = self.db.execute(
             text(
                 """
-                SELECT t.user_id, t.twwet
-                FROM tweets AS t
-                LEFT JOIN user_follow_list AS ufl 
-                ON ufl.user_id = :user_id
-                WHERE t.user_id = :user_id OR t.user_id = ufl.follow_user_id
-                """
+            SELECT 
+                t.user_id,
+                t.tweet
+            FROM tweets t
+            LEFT JOIN users_follow_list ufl ON ufl.user_id = :user_id
+            WHERE t.user_id = :user_id 
+            OR t.user_id = ufl.follow_user_id
+        """
             ),
-            {"id": user_id},
+            {"user_id": user_id},
         ).fetchall()
 
         return [
