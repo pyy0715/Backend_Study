@@ -1,8 +1,10 @@
 import jwt
 
-from flask import request, jsonify, current_app, Response, g
+from flask import request, jsonify, current_app, Response, g, send_file
 from flask.json import JSONEncoder
 from functools import wraps
+
+from werkzeug.utils import secure_filename
 
 # Default JSON encoder는 set를 JSON으로 변환할 수 없다.
 # 그럼으로 커스텀 엔코더를 작성해서 set을 list로 변환하여
@@ -122,7 +124,34 @@ def create_endpoints(app, services):
     @app.route("/timeline", methods=["GET"])
     @login_required
     def user_timeline():
-        user_id = g.user_id
         timeline = tweet_service.get_timeline(g.user_id)
 
-        return jsonify({"user_id": user_id, "timeline": timeline})
+        return jsonify({"user_id": g.user_id, "timeline": timeline})
+
+    @app.route("/profile-picture", methods=["POST"])
+    @login_required
+    def upload_profile_picture():
+        user_id = g.user_id
+
+        if "profile_pic" not in request.files:
+            return "File is missing", 404
+
+        profile_pic = request.files["profile_pic"]
+
+        if profile_pic.filename == "":
+            return "File is missing", 404
+
+        filename = secure_filename(profile_pic.filename)
+        user_service.save_profile_picture(profile_pic, filename, user_id)
+
+        return "", 200
+
+    @app.route("/profile-picture/<int:user_id>", methods=["GET"])
+    def get_profile_picture(user_id):
+        profile_picture = user_service.get_profile_picture(user_id)
+
+        if profile_picture:
+            return jsonify({"img_url": profile_picture})
+        else:
+            return "", 404
+
