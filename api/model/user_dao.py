@@ -55,3 +55,29 @@ class UserDao:
             ),
             {"id": user_id, "unfollow": unfollow_id},
         ).rowcount
+
+    def save_profile_picture(self, profile_pic_path, user_id):
+        return self.db.exectue(
+            text(
+                """
+                UPDATE users
+                SET profile_picture = :proflie_pic_path
+                WHERE id = :user_id
+                """
+            ),
+            {"user_id": user_id, "proflie_pic_path": profile_pic_path},
+        ).rowncout
+
+    def get_profile_picture(self, user_id):
+        row = self.db.execute(
+            text(
+                """
+                SELECT profile_picture
+                FROM users
+                WHERE id = :user_id
+                """
+            ),
+            {"user_id": user_id},
+        ).fetchone()
+        return row["profile_picture"] if row else None
+
